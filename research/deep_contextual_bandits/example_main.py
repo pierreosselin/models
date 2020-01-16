@@ -50,6 +50,7 @@ from bandits.data.synthetic_data_sampler import sample_linear_data
 from bandits.data.synthetic_data_sampler import sample_sparse_linear_data
 from bandits.data.synthetic_data_sampler import sample_wheel_bandit_data
 from bandits.algorithms.uniform_sampling import UniformSampling
+from bandits.algorithms.neural_linear_sampling_finite_memory import NeuralLinearPosteriorSamplingFiniteMemory
 
 # Set up your file routes to the data files.
 base_route = os.getcwd()
@@ -62,6 +63,7 @@ flags.DEFINE_string(
     'mushroom_data',
     os.path.join(base_route, data_route, 'mushroom.data'),
     'Directory where Mushroom data is stored.')
+'''
 flags.DEFINE_string(
     'financial_data',
     os.path.join(base_route, data_route, 'raw_stock_contexts'),
@@ -86,7 +88,7 @@ flags.DEFINE_string(
     'census_data',
     os.path.join(base_route, data_route, 'USCensus1990.data.txt'),
     'Directory where Census data is stored.')
-
+'''
 
 def sample_data(data_type, num_contexts=None):
   """Sample data from given 'data_type'.
@@ -228,7 +230,14 @@ def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
 def main(_):
 
   # Problem parameters
-  num_contexts = 50000
+  num_contexts = 2000
+  
+  # parameters of finite
+  tfn=400
+  tfe=tfn*2
+  data_type = 'statlog'
+  l_sizes=[50]
+  outdir  ="./"
 
   # Data type in {linear, sparse_linear, mushroom, financial, jester,
   #                 statlog, adult, covertype, census, wheel}
@@ -247,7 +256,7 @@ def main(_):
                                                b0=6,
                                                lambda_prior=0.25,
                                                initial_pulls=2)
-
+ 
   hparams_rms = tf.contrib.training.HParams(num_actions=num_actions,
                                             context_dim=context_dim,
                                             init_scale=0.3,
@@ -355,6 +364,81 @@ def main(_):
                                                  a0=6,
                                                  b0=6,
                                                  lambda_prior=0.25)
+                                                 
+  hparams_nlinear_finite_memory = tf.contrib.training.HParams(num_actions=num_actions,
+                                                context_dim=context_dim,
+                                                init_scale=0.3,
+                                                activation=tf.nn.relu,
+                                                layer_sizes=l_sizes,
+                                                batch_size=64,
+                                                activate_decay=True,
+                                                initial_lr=0.1,
+                                                max_grad_norm=5.0,
+                                                show_training=False,
+                                                freq_summary=1000,
+                                                buffer_s=-1,
+                                                initial_pulls=2,
+                                                reset_lr=True,
+                                                lr_decay_rate=0.5,
+                                                training_freq=1,
+                                                training_freq_network=50,
+                                                training_epochs=100,
+                                                a0=6,
+                                                b0=6,
+                                                lambda_prior=1,
+                                                mem=num_actions*100,
+                                                mu_prior_flag=1,
+                                                sigma_prior_flag=1)
+
+  hparams_nlinear_finite_memory_no_prior = tf.contrib.training.HParams(num_actions=num_actions,
+                                                context_dim=context_dim,
+                                                init_scale=0.3,
+                                                activation=tf.nn.relu,
+                                                layer_sizes=l_sizes,
+                                                batch_size=64,
+                                                activate_decay=True,
+                                                initial_lr=0.1,
+                                                max_grad_norm=5.0,
+                                                show_training=False,
+                                                freq_summary=1000,
+                                                buffer_s=-1,
+                                                initial_pulls=2,
+                                                reset_lr=True,
+                                                lr_decay_rate=0.5,
+                                                training_freq=1,
+                                                training_freq_network=50,
+                                                training_epochs=100,
+                                                a0=6,
+                                                b0=6,
+                                                lambda_prior=1,
+                                                mem=num_actions*100,
+                                                mu_prior_flag=0,
+                                                sigma_prior_flag=0)
+
+  hparams_nlinear_finite_memory_no_sig_prior = tf.contrib.training.HParams(num_actions=num_actions,
+                                                context_dim=context_dim,
+                                                init_scale=0.3,
+                                                activation=tf.nn.relu,
+                                                layer_sizes=l_sizes,
+                                                batch_size=64,
+                                                activate_decay=True,
+                                                initial_lr=0.1,
+                                                max_grad_norm=5.0,
+                                                show_training=False,
+                                                freq_summary=1000,
+                                                buffer_s=-1,
+                                                initial_pulls=2,
+                                                reset_lr=True,
+                                                lr_decay_rate=0.5,
+                                                training_freq=1,
+                                                training_freq_network=50,
+                                                training_epochs=100,
+                                                a0=6,
+                                                b0=6,
+                                                lambda_prior=1,
+                                                mem=num_actions*100,
+                                                mu_prior_flag=1,
+                                                sigma_prior_flag=0)
 
   hparams_pnoise = tf.contrib.training.HParams(num_actions=num_actions,
                                                context_dim=context_dim,
@@ -425,24 +509,26 @@ def main(_):
                                            task_latent_dim=5,
                                            activate_decay=False)
 
-  # algos = [
-  #     UniformSampling('Uniform Sampling', hparams),
-  #     UniformSampling('Uniform Sampling 2', hparams),
-  #     FixedPolicySampling('fixed1', [0.75, 0.25], hparams),
-  #     FixedPolicySampling('fixed2', [0.25, 0.75], hparams),
-  #     PosteriorBNNSampling('RMS', hparams_rms, 'RMSProp'),
-  #     PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
-  #     PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
-  #     NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
-  #     NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
-  #     LinearFullPosteriorSampling('LinFullPost', hparams_linear),
-  #     BootstrappedBNNSampling('BootRMS', hparams_rms),
-  #     ParameterNoiseSampling('ParamNoise', hparams_pnoise),
-  #     PosteriorBNNSampling('BBAlphaDiv', hparams_alpha_div, 'AlphaDiv'),
-  #     PosteriorBNNSampling('MultitaskGP', hparams_gp, 'GP'),
-  # ]
+  algos = [
+      UniformSampling('Uniform Sampling', hparams),
+      UniformSampling('Uniform Sampling 2', hparams),
+      FixedPolicySampling('fixed1', [0.75, 0.25], hparams),
+      FixedPolicySampling('fixed2', [0.25, 0.75], hparams),
+      #PosteriorBNNSampling('RMS', hparams_rms, 'RMSProp'),
+      PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
+      PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
+      NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
+      NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
+      LinearFullPosteriorSampling('LinFullPost', hparams_linear),
+      BootstrappedBNNSampling('BootRMS', hparams_rms),
+      NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
+      NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
+      NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noSigP', hparams_nlinear_finite_memory_no_sig_prior)
+      #ParameterNoiseSampling('ParamNoise', hparams_pnoise),
+      #PosteriorBNNSampling('BBAlphaDiv', hparams_alpha_div, 'AlphaDiv'),
+      #PosteriorBNNSampling('MultitaskGP', hparams_gp, 'GP'),
+  ]
 
-  algos = [PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp')]
   # Run contextual bandit problem
   t_init = time.time()
   results = run_contextual_bandit(context_dim, num_actions, dataset, algos)

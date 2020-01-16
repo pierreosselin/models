@@ -218,3 +218,189 @@ class NeuralBanditModel(BayesianNN):
           self.summary_writer.add_summary(summary, step)
 
       self.times_trained += 1
+
+  def get_mu_prior(self):
+      with self.graph.as_default():
+        with tf.name_scope(self.name):
+            for v in tf.trainable_variables():
+                if 'dense/kernel:0' in v.name:
+                    weights = self.sess.run(v)
+                if 'dense/bias:0' in v.name:
+                    bias = self.sess.run(v)
+      return weights,bias
+
+  def set_last_layer(self,mu):
+      #mu 40*7
+      sec = self.hparams.layer_sizes[-1] #41
+      weights = [[] for i in xrange(sec)] #7*40
+      bias = []
+      for mu_i in mu:
+          bias.append(mu_i[-1])
+          for j,w_j in enumerate(weights): #40
+              w_j.append(mu_i[j])
+      with self.graph.as_default():
+        with tf.name_scope(self.name):
+            for v in tf.trainable_variables():
+                if 'dense/kernel:0' in v.name:
+                    v.load(weights,self.sess)
+                if 'dense/bias:0' in v.name:
+                    v.load(bias,self.sess)
+
+
+class TextCNN(object):
+    """
+    A CNN for text classification.
+    Uses an embedding layer, followed by a convolutional, max-pooling and softmax layer.
+    """
+
+    def __init__(
+      self,optimizer, num_classes,batch_size,name,sequence_length=60,vocab_size=18765,
+      embedding_size=128, filter_sizes=[3,4,5], num_filters=128):
+
+        # Placeholders for input, output and dropout
+
+        self.lr = 1e-3
+        self.name=name
+        self.opt_name = optimizer
+        self.num_actions = num_classes
+        self.batch_size = batch_size
+        # Keeping track of l2 regularization loss (optional)
+        self.graph = tf.Graph()
+        print("Initializing model {}.".format(self.name))
+
+        with self.graph.as_default():
+            self.sess = tf.Session()
+            with tf.name_scope(self.name):
+                # Embedding layer
+                self.x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
+                self.y = tf.placeholder(tf.float32, [None,num_classes ], name="input_y")
+                with tf.name_scope("embedding"):
+                    self.W = tf.Variable(
+                        tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0),
+                        name="W")
+                    self.embedded_chars = tf.nn.embedding_lookup(self.W, self.x)
+                    self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
+
+                # Create a convolution + maxpool layer for each filter size
+                pooled_outputs = []
+                for i, filter_size in enumerate(filter_sizes):
+                    with tf.name_scope("conv-maxpool-%s" % filter_size):
+                        # Convolution Layer
+                        filter_shape = [filter_size, embedding_size, 1, num_filters]
+                        W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
+                        b = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="b")
+                        conv = tf.nn.conv2d(
+                            self.embedded_chars_expanded,
+                            W,
+                            strides=[1, 1, 1, 1],
+                            padding="VALID",
+                            name="conv")
+                        # Apply nonlinearity
+                        h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
+                        # Maxpooling over the outputs
+                        pooled = tf.nn.max_pool(
+                            h,
+                            ksize=[1, sequence_length - filter_size + 1, 1, 1],
+                            strides=[1, 1, 1, 1],
+                            padding='VALID',
+                            name="pool")
+                        pooled_outputs.append(pooled)
+
+                # Combine all the pooled features
+                num_filters_total = num_filters * len(filter_sizes)
+                self.h_pool = tf.concat(pooled_outputs, 3)
+                self.last_h = tf.reshape(self.h_pool, [-1, num_filters_total])
+
+                # weights (1 for selected action, 0 otherwise)
+                self.weights = tf.placeholder(
+                    shape=[None, self.num_actions],
+                    dtype=tf.float32,
+                    name="{}_w".format(self.name))
+
+                # with tf.variable_scope("prediction_{}".format(self.name)):
+                self.nn = tf.contrib.layers.fully_connected(
+                    self.last_h,
+                    50,
+                    activation_fn=tf.nn.relu,
+                    normalizer_fn= tf.contrib.layers.layer_norm,
+                    normalizer_params={},
+                    weights_initializer=tf.contrib.layers.xavier_initializer()
+                )
+
+                self.y_pred = tf.layers.dense(
+                    self.nn,
+                    self.num_actions,
+                    kernel_initializer=tf.contrib.layers.xavier_initializer())
+
+                self.loss = tf.squared_difference(self.y_pred, self.y)
+                self.weighted_loss = tf.multiply(self.weights, self.loss)
+                self.cost = tf.reduce_sum(self.weighted_loss) / self.batch_size
+
+                tvars = tf.trainable_variables()
+                grads = tf.gradients(self.cost, tvars)
+                self.optimizer = self.select_optimizer()
+
+                self.train_op = self.optimizer.apply_gradients(zip(grads, tvars))
+
+                self.init = tf.global_variables_initializer()
+
+                self.initialize_graph()
+
+    def initialize_graph(self):
+        """Initializes all variables."""
+        with self.graph.as_default():
+            self.sess.run(self.init)
+    def select_optimizer(self):
+        """Selects optimizer. To be extended (SGLD, KFAC, etc)."""
+        return tf.train.AdamOptimizer(1e-3)
+    def train(self, data, num_steps):
+        """Trains the network for num_steps, using the provided data.
+
+        Args:
+          data: ContextualDataset object that provides the data.
+          num_steps: Number of minibatches to train the network for.
+        """
+        print("Training {} for {} steps...".format(self.name, num_steps))
+
+        with self.graph.as_default():
+
+            for step in range(num_steps):
+                x, y, w = data.get_batch_with_weights(self.batch_size)
+                #x = [map(int,i) for i in x]
+                #y = [map(int,i) for i in y]
+                #w = [map(int,i) for i in w]
+                self.sess.run([self.train_op, self.cost],feed_dict={self.x: x, self.y: y, self.weights: w})
+
+    def assign_lr(self):
+
+        decay_steps = 1
+
+    def get_mu_prior(self):
+        #h_pool_flat
+
+
+      with self.graph.as_default():
+        with tf.name_scope(self.name):
+            for v in tf.trainable_variables():
+                if 'dense/kernel:0' in v.name:
+                    weights = self.sess.run(v)
+                if 'dense/bias:0' in v.name:
+                    bias = self.sess.run(v)
+      return weights,bias
+
+    def set_last_layer(self,mu):
+      #mu 40*7
+      sec = self.hparams.layer_sizes[-1] #41
+      weights = [[] for i in xrange(sec)] #7*40
+      bias = []
+      for mu_i in mu:
+          bias.append(mu_i[-1])
+          for j,w_j in enumerate(weights): #40
+              w_j.append(mu_i[j])
+      with self.graph.as_default():
+        with tf.name_scope(self.name):
+            for v in tf.trainable_variables():
+                if 'dense/kernel:0' in v.name:
+                    v.load(weights,self.sess)
+                if 'dense/bias:0' in v.name:
+                    v.load(bias,self.sess)
