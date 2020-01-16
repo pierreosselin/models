@@ -228,7 +228,7 @@ def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
 def main(_):
 
   # Problem parameters
-  num_contexts = 2000
+  num_contexts = 50000
 
   # Data type in {linear, sparse_linear, mushroom, financial, jester,
   #                 statlog, adult, covertype, census, wheel}
@@ -425,23 +425,24 @@ def main(_):
                                            task_latent_dim=5,
                                            activate_decay=False)
 
-  algos = [
-      UniformSampling('Uniform Sampling', hparams),
-      UniformSampling('Uniform Sampling 2', hparams),
-      FixedPolicySampling('fixed1', [0.75, 0.25], hparams),
-      FixedPolicySampling('fixed2', [0.25, 0.75], hparams),
-      PosteriorBNNSampling('RMS', hparams_rms, 'RMSProp'),
-      PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
-      PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
-      NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
-      NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
-      LinearFullPosteriorSampling('LinFullPost', hparams_linear),
-      BootstrappedBNNSampling('BootRMS', hparams_rms),
-      ParameterNoiseSampling('ParamNoise', hparams_pnoise),
-      PosteriorBNNSampling('BBAlphaDiv', hparams_alpha_div, 'AlphaDiv'),
-      PosteriorBNNSampling('MultitaskGP', hparams_gp, 'GP'),
-  ]
+  # algos = [
+  #     UniformSampling('Uniform Sampling', hparams),
+  #     UniformSampling('Uniform Sampling 2', hparams),
+  #     FixedPolicySampling('fixed1', [0.75, 0.25], hparams),
+  #     FixedPolicySampling('fixed2', [0.25, 0.75], hparams),
+  #     PosteriorBNNSampling('RMS', hparams_rms, 'RMSProp'),
+  #     PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
+  #     PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
+  #     NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
+  #     NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
+  #     LinearFullPosteriorSampling('LinFullPost', hparams_linear),
+  #     BootstrappedBNNSampling('BootRMS', hparams_rms),
+  #     ParameterNoiseSampling('ParamNoise', hparams_pnoise),
+  #     PosteriorBNNSampling('BBAlphaDiv', hparams_alpha_div, 'AlphaDiv'),
+  #     PosteriorBNNSampling('MultitaskGP', hparams_gp, 'GP'),
+  # ]
 
+  algos = [PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp')]
   # Run contextual bandit problem
   t_init = time.time()
   results = run_contextual_bandit(context_dim, num_actions, dataset, algos)
