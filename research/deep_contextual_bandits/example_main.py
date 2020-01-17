@@ -231,7 +231,7 @@ def main(_):
 
   # Problem parameters
   num_contexts = 2000
-  
+
   # parameters of finite
   tfn=400
   tfe=tfn*2
@@ -256,7 +256,7 @@ def main(_):
                                                b0=6,
                                                lambda_prior=0.25,
                                                initial_pulls=2)
- 
+
   hparams_rms = tf.contrib.training.HParams(num_actions=num_actions,
                                             context_dim=context_dim,
                                             init_scale=0.3,
@@ -364,7 +364,7 @@ def main(_):
                                                  a0=6,
                                                  b0=6,
                                                  lambda_prior=0.25)
-                                                 
+
   hparams_nlinear_finite_memory = tf.contrib.training.HParams(num_actions=num_actions,
                                                 context_dim=context_dim,
                                                 init_scale=0.3,
@@ -508,6 +508,29 @@ def main(_):
                                            optimizer='RMS',
                                            task_latent_dim=5,
                                            activate_decay=False)
+
+    hparams_ucb = tf.contrib.training.HParams(num_actions=num_actions,
+                                             num_outputs=num_actions,
+                                             context_dim=context_dim,
+                                             reset_lr=False,
+                                             learn_embeddings=True,
+                                             max_num_points=1000,
+                                             show_training=False,
+                                             freq_summary=1000,
+                                             batch_size=512,
+                                             keep_fixed_after_max_obs=True,
+                                             training_freq=50,
+                                             initial_pulls=2,
+                                             training_epochs=100,
+                                             lr=0.01,
+                                             buffer_s=-1,
+                                             initial_lr=0.001,
+                                             lr_decay_rate=0.0,
+                                             optimizer='RMS',
+                                             task_latent_dim=5,
+                                             activate_decay=False,
+                                             delta = 0.01,
+                                             lambda = 0.01)
 
   algos = [
       UniformSampling('Uniform Sampling', hparams),
