@@ -527,7 +527,7 @@ def main(_):
                                             reset_lr=True,
                                             lr_decay_rate=0.5,
                                             optimizer='RMS',
-                                            training_freq=1,
+                                            training_freq=50,
                                             training_freq_network=50,
                                             training_epochs=100,
                                             lambda_prior=0.25,
