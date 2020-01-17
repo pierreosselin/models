@@ -50,7 +50,7 @@ from bandits.data.synthetic_data_sampler import sample_linear_data
 from bandits.data.synthetic_data_sampler import sample_sparse_linear_data
 from bandits.data.synthetic_data_sampler import sample_wheel_bandit_data
 from bandits.algorithms.uniform_sampling import UniformSampling
-from bandits.algorithms.neural_linear_sampling_finite_memory import NeuralLinearPosteriorSamplingFiniteMemory
+#from bandits.algorithms.neural_linear_sampling_finite_memory import NeuralLinearPosteriorSamplingFiniteMemory
 from bandits.algorithms.neuralUCB import NeuralUCBSampling
 
 
@@ -512,25 +512,25 @@ def main(_):
                                            activate_decay=False)
 
   hparams_ucb = tf.contrib.training.HParams(num_actions=num_actions,
-                                            num_outputs=num_actions,
                                             context_dim=context_dim,
-                                            reset_lr=False,
-                                            learn_embeddings=True,
-                                            max_num_points=1000,
+                                            init_scale=0.3,
+                                            activation=tf.nn.relu,
+                                            layer_sizes=[50],
+                                            batch_size=512,
+                                            activate_decay=True,
+                                            initial_lr=0.1,
+                                            max_grad_norm=5.0,
                                             show_training=False,
                                             freq_summary=1000,
-                                            batch_size=512,
-                                            keep_fixed_after_max_obs=True,
-                                            training_freq=50,
-                                            initial_pulls=2,
-                                            training_epochs=100,
-                                            lr=0.01,
                                             buffer_s=-1,
-                                            initial_lr=0.001,
-                                            lr_decay_rate=0.0,
+                                            initial_pulls=2,
+                                            reset_lr=True,
+                                            lr_decay_rate=0.5,
                                             optimizer='RMS',
-                                            task_latent_dim=5,
-                                            activate_decay=False,
+                                            training_freq=1,
+                                            training_freq_network=50,
+                                            training_epochs=100,
+                                            lambda_prior=0.25,
                                             delta = 0.01,
                                             lamb = 0.01,
                                             mu = 1,

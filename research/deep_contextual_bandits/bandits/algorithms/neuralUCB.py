@@ -21,6 +21,8 @@ from __future__ import print_function
 
 import numpy as np
 
+import tensorflow as tf
+
 from bandits.core.bandit_algorithm import BanditAlgorithm
 from bandits.algorithms.bb_alpha_divergence_model import BBAlphaDivergence
 from bandits.algorithms.bf_variational_neural_bandit_model import BfVariationalNeuralBanditModel
@@ -53,7 +55,7 @@ class NeuralUCBSampling(BanditAlgorithm):
     self.training_epochs = hparams.training_epochs
     self.t = 0
     self.gamma = 0
-    self.Zinv = (1/hparams.lamb) * np.eye(hparams.lamb)
+
     self.bonus = np.zeros(hparams.num_actions)
     self.C1 = 1
     self.C2 = 1
@@ -64,6 +66,8 @@ class NeuralUCBSampling(BanditAlgorithm):
     # to be extended with more BNNs (BB alpha-div, GPs, SGFS, constSGD...)
     bnn_name = '{}-ucb'.format(name)
     self.bnn = NeuralBanditModel(self.optimizer_n, hparams, bnn_name)
+    self.p = (hparams.context_dim + 1) * (hparams.layer_sizes[0]) + (hparams.layer_sizes[0] + 1) * (hparams.layer_sizes[0]) * (len(hparams.layer_sizes) - 1) + (hparams.layer_sizes[0] + 1) * hparams.num_actions
+    self.Zinv = (1/hparams.lamb) * np.eye(self.p)
 
   def action(self, context):
     """Selects action for context based on UCB using the NN."""
@@ -101,6 +105,7 @@ class NeuralUCBSampling(BanditAlgorithm):
     tvars = tf.trainable_variables()
     grads, _ = tf.clip_by_global_norm(tf.gradients(self.bnn.y_pred[action], tvars), self.hparams.max_grad_norm)
     outer = np.outer(grads,grads) / self.hparams.layer_sizes[0]
+    print("SHAPE OUTER", outer.shape)
     self.Zinv -= self.Zinv.dot(outer.dot(self.Zinv))/(1 + grads.T.dot(self.Zinv.dot(grads)))
     self.gamma = np.sqrt(1 + self.C1*((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**4) * (self.t**(7/6)) * (self.hparams.lamb ** (-7/6))  )
     self.gamma *= self.hparams.mu * np.sqrt(-np.log(np.linalg.det(self.hparams.lamb * self.Zinv)) + self.C2 * ((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**4) * (self.t**(5/3)) * (self.hparams.lamb ** (-1/6)) - 2*np.log(self.hparams.delta)  ) + np.sqrt(self.hparams.lamb)*self.hparams.S
