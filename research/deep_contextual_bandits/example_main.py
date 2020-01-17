@@ -51,6 +51,8 @@ from bandits.data.synthetic_data_sampler import sample_sparse_linear_data
 from bandits.data.synthetic_data_sampler import sample_wheel_bandit_data
 from bandits.algorithms.uniform_sampling import UniformSampling
 from bandits.algorithms.neural_linear_sampling_finite_memory import NeuralLinearPosteriorSamplingFiniteMemory
+from bandits.algorithms.neuralUCB import NeuralUCBSampling
+
 
 # Set up your file routes to the data files.
 base_route = os.getcwd()
@@ -509,47 +511,50 @@ def main(_):
                                            task_latent_dim=5,
                                            activate_decay=False)
 
-    hparams_ucb = tf.contrib.training.HParams(num_actions=num_actions,
-                                             num_outputs=num_actions,
-                                             context_dim=context_dim,
-                                             reset_lr=False,
-                                             learn_embeddings=True,
-                                             max_num_points=1000,
-                                             show_training=False,
-                                             freq_summary=1000,
-                                             batch_size=512,
-                                             keep_fixed_after_max_obs=True,
-                                             training_freq=50,
-                                             initial_pulls=2,
-                                             training_epochs=100,
-                                             lr=0.01,
-                                             buffer_s=-1,
-                                             initial_lr=0.001,
-                                             lr_decay_rate=0.0,
-                                             optimizer='RMS',
-                                             task_latent_dim=5,
-                                             activate_decay=False,
-                                             delta = 0.01,
-                                             lambda = 0.01)
+  hparams_ucb = tf.contrib.training.HParams(num_actions=num_actions,
+                                            num_outputs=num_actions,
+                                            context_dim=context_dim,
+                                            reset_lr=False,
+                                            learn_embeddings=True,
+                                            max_num_points=1000,
+                                            show_training=False,
+                                            freq_summary=1000,
+                                            batch_size=512,
+                                            keep_fixed_after_max_obs=True,
+                                            training_freq=50,
+                                            initial_pulls=2,
+                                            training_epochs=100,
+                                            lr=0.01,
+                                            buffer_s=-1,
+                                            initial_lr=0.001,
+                                            lr_decay_rate=0.0,
+                                            optimizer='RMS',
+                                            task_latent_dim=5,
+                                            activate_decay=False,
+                                            delta = 0.01,
+                                            lamb = 0.01,
+                                            mu = 1,
+                                            S = 1)
 
   algos = [
-      UniformSampling('Uniform Sampling', hparams),
-      UniformSampling('Uniform Sampling 2', hparams),
-      FixedPolicySampling('fixed1', [0.75, 0.25], hparams),
-      FixedPolicySampling('fixed2', [0.25, 0.75], hparams),
+      #UniformSampling('Uniform Sampling', hparams),
+      #UniformSampling('Uniform Sampling 2', hparams),
+      #FixedPolicySampling('fixed1', [0.75, 0.25], hparams),
+      #FixedPolicySampling('fixed2', [0.25, 0.75], hparams),
       #PosteriorBNNSampling('RMS', hparams_rms, 'RMSProp'),
-      PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
-      PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
-      NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
-      NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
-      LinearFullPosteriorSampling('LinFullPost', hparams_linear),
-      BootstrappedBNNSampling('BootRMS', hparams_rms),
-      NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
-      NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
-      NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noSigP', hparams_nlinear_finite_memory_no_sig_prior)
+      #PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
+      #PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
+      #NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
+      #NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
+      #LinearFullPosteriorSampling('LinFullPost', hparams_linear),
+      #BootstrappedBNNSampling('BootRMS', hparams_rms),
+      #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
+      #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
+      #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noSigP', hparams_nlinear_finite_memory_no_sig_prior)
       #ParameterNoiseSampling('ParamNoise', hparams_pnoise),
       #PosteriorBNNSampling('BBAlphaDiv', hparams_alpha_div, 'AlphaDiv'),
-      #PosteriorBNNSampling('MultitaskGP', hparams_gp, 'GP'),
+      #PosteriorBNNSampling('MultitaskGP', hparams_gp, 'GP'),hparams_ucb
+      NeuralUCBSampling('NeuralUCB', hparams_ucb)
   ]
 
   # Run contextual bandit problem

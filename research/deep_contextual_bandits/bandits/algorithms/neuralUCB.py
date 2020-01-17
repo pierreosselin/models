@@ -53,7 +53,7 @@ class NeuralUCBSampling(BanditAlgorithm):
     self.training_epochs = hparams.training_epochs
     self.t = 0
     self.gamma = 0
-    self.Zinv = (1/hparams.lambda) * np.eye(hparams.lambda)
+    self.Zinv = (1/hparams.lamb) * np.eye(hparams.lamb)
     self.bonus = np.zeros(hparams.num_actions)
     self.C1 = 1
     self.C2 = 1
@@ -77,7 +77,14 @@ class NeuralUCBSampling(BanditAlgorithm):
       output = self.bnn.sess.run(self.bnn.y_pred, feed_dict={self.bnn.x: c})
 
       ### Add confidence bound to outbut
-      output += bonus
+      tvars = tf.trainable_variables()
+      grads, _ = tf.clip_by_global_norm(tf.gradients(self.bnn.y_pred[action], tvars), self.hparams.max_grad_norm)
+      bonus = []
+      for ac in range(self.hparams.num_actions):
+          tvars = tf.trainable_variables()
+          grads, _ = tf.clip_by_global_norm(tf.gradients(self.bnn.y_pred[ac], tvars), self.hparams.max_grad_norm)
+          bonus.append(self.gamma * np.sqrt(grads.dot(self.Zinv.dot(grads)) / self.hparams.layer_sizes[0]))
+      output += np.array(bonus)
       return np.argmax(output)
 
   def update(self, context, action, reward):
@@ -95,6 +102,6 @@ class NeuralUCBSampling(BanditAlgorithm):
     grads, _ = tf.clip_by_global_norm(tf.gradients(self.bnn.y_pred[action], tvars), self.hparams.max_grad_norm)
     outer = np.outer(grads,grads) / self.hparams.layer_sizes[0]
     self.Zinv -= self.Zinv.dot(outer.dot(self.Zinv))/(1 + grads.T.dot(self.Zinv.dot(grads)))
-    self.gamma = np.sqrt(1 + self.C1*((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**4) * (self.t**(7/6)) * (self.hparams.lambda ** (-7/6))  )
-    self.gamma *= self.hparams.mu * np.sqrt(-np.log(np.linalg.det(self.hparams.lambda * self.Zinv)) + self.C2 * ((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**4) * (self.t**(5/3)) * (self.hparams.lambda ** (-1/6)) - 2*np.log(self.hparams.delta)  ) + np.sqrt(self.hparams.lambda)*self.hparams.S
-    self.gamma += self.C3*((1 - self.hparams.mu * self.hparams.layer_sizes[0] * self.hparams.lambda )**(self.training_epochs) * np.sqrt(self.t/self.hparams.lambda) + ((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**(7/2)) * (self.t**(5/3)) * (self.hparams.lambda ** (-5/3)) * (1 + np.sqrt(self.t/self.hparams.lambda)))
+    self.gamma = np.sqrt(1 + self.C1*((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**4) * (self.t**(7/6)) * (self.hparams.lamb ** (-7/6))  )
+    self.gamma *= self.hparams.mu * np.sqrt(-np.log(np.linalg.det(self.hparams.lamb * self.Zinv)) + self.C2 * ((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**4) * (self.t**(5/3)) * (self.hparams.lamb ** (-1/6)) - 2*np.log(self.hparams.delta)  ) + np.sqrt(self.hparams.lamb)*self.hparams.S
+    self.gamma += self.C3*((1 - self.hparams.mu * self.hparams.layer_sizes[0] * self.hparams.lamb )**(self.training_epochs) * np.sqrt(self.t/self.hparams.lamb) + ((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**(7/2)) * (self.t**(5/3)) * (self.hparams.lamb ** (-5/3)) * (1 + np.sqrt(self.t/self.hparams.lamb)))
