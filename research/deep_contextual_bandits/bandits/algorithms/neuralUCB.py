@@ -81,12 +81,11 @@ class NeuralUCBSampling(BanditAlgorithm):
       output = self.bnn.sess.run(self.bnn.y_pred, feed_dict={self.bnn.x: c})
 
       ### Add confidence bound to outbut
-      tvars = tf.trainable_variables()
-      grads, _ = tf.clip_by_global_norm(tf.gradients(self.bnn.y_pred[action], tvars), self.hparams.max_grad_norm)
       bonus = []
       for ac in range(self.hparams.num_actions):
           tvars = tf.trainable_variables()
-          grads, _ = tf.clip_by_global_norm(tf.gradients(self.bnn.y_pred[ac], tvars), self.hparams.max_grad_norm)
+          grads, _ = self.bnn.sess.run(tf.clip_by_global_norm(tf.gradients(self.bnn.y_pred[action], tvars), self.hparams.max_grad_norm),feed_dict={self.bnn.x: context})
+
           bonus.append(self.gamma * np.sqrt(grads.dot(self.Zinv.dot(grads)) / self.hparams.layer_sizes[0]))
       output += np.array(bonus)
       return np.argmax(output)
@@ -102,8 +101,12 @@ class NeuralUCBSampling(BanditAlgorithm):
         self.bnn.assign_lr()
       self.bnn.train(self.data_h, self.training_epochs)
 
-    tvars = tf.trainable_variables()
-    grads, _ = tf.clip_by_global_norm(tf.gradients(self.bnn.y_pred[action], tvars), self.hparams.max_grad_norm)
+    testVariable = self.bnn.sess.run(self.bnn.gradAction[action],feed_dict={self.bnn.x: context.reshape(1,-1)})
+    grads = np.array([])
+    for el in testVariable:
+        grads = np.concatenate((grads, el.flatten()))
+    print(grads)
+
     outer = np.outer(grads,grads) / self.hparams.layer_sizes[0]
     print("SHAPE OUTER", outer.shape)
     self.Zinv -= self.Zinv.dot(outer.dot(self.Zinv))/(1 + grads.T.dot(self.Zinv.dot(grads)))

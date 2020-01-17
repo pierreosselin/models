@@ -127,7 +127,6 @@ class NeuralBanditModel(BayesianNN):
         self.loss = tf.squared_difference(self.y_pred, self.y)
         self.weighted_loss = tf.multiply(self.weights, self.loss)
         self.cost = tf.reduce_sum(self.weighted_loss) / self.hparams.batch_size
-
         if self.hparams.activate_decay:
           self.lr = tf.train.inverse_time_decay(
               self.hparams.initial_lr, self.global_step,
@@ -143,7 +142,7 @@ class NeuralBanditModel(BayesianNN):
         tvars = tf.trainable_variables()
         grads, _ = tf.clip_by_global_norm(
             tf.gradients(self.cost, tvars), self.hparams.max_grad_norm)
-
+        self.gradAction = [tf.gradients(self.y_pred[0,ac], tvars) for ac in range(self.hparams.num_actions)]
         self.optimizer = self.select_optimizer()
 
         self.train_op = self.optimizer.apply_gradients(
