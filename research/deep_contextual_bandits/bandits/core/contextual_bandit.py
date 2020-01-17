@@ -50,7 +50,10 @@ def run_contextual_bandit(context_dim, num_actions, dataset, algos):
   h_rewards = np.empty((0, len(algos)), float)
 
   # Run the contextual bandit process
+  propDisplay = num_contexts//10
   for i in range(num_contexts):
+    if i % propDisplay == 0:
+        print("{0} / {} experiment completed".format(i,num_contexts))
     context = cmab.context(i)
     actions = [a.action(context) for a in algos]
     rewards = [cmab.reward(i, action) for action in actions]

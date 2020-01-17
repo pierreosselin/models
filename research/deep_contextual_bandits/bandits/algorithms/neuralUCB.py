@@ -80,12 +80,13 @@ class NeuralUCBSampling(BanditAlgorithm):
       c = context.reshape((1, self.hparams.context_dim))
       output = self.bnn.sess.run(self.bnn.y_pred, feed_dict={self.bnn.x: c})
 
-      ### Add confidence bound to outbut
+      ### Add confidence bound to outbut²
+      listTensorGradients = self.bnn.sess.run(self.bnn.gradAction,feed_dict={self.bnn.x: c})
       bonus = []
-      for ac in range(self.hparams.num_actions):
-          tvars = tf.trainable_variables()
-          grads, _ = self.bnn.sess.run(tf.clip_by_global_norm(tf.gradients(self.bnn.y_pred[action], tvars), self.hparams.max_grad_norm),feed_dict={self.bnn.x: context})
-
+      for act in range(self.hparams.num_actions):
+          grads = np.array([])
+          for el in listTensorGradients[act]:
+              grads = np.concatenate((grads, el.flatten()))
           bonus.append(self.gamma * np.sqrt(grads.dot(self.Zinv.dot(grads)) / self.hparams.layer_sizes[0]))
       output += np.array(bonus)
       return np.argmax(output)
@@ -101,14 +102,12 @@ class NeuralUCBSampling(BanditAlgorithm):
         self.bnn.assign_lr()
       self.bnn.train(self.data_h, self.training_epochs)
 
-    testVariable = self.bnn.sess.run(self.bnn.gradAction[action],feed_dict={self.bnn.x: context.reshape(1,-1)})
+    tensorGradients =  self.bnn.sess.run(self.bnn.gradAction[action],feed_dict={self.bnn.x: context.reshape(1,-1)})
     grads = np.array([])
-    for el in testVariable:
+    for el in tensorGradients:
         grads = np.concatenate((grads, el.flatten()))
-    print(grads)
 
     outer = np.outer(grads,grads) / self.hparams.layer_sizes[0]
-    print("SHAPE OUTER", outer.shape)
     self.Zinv -= self.Zinv.dot(outer.dot(self.Zinv))/(1 + grads.T.dot(self.Zinv.dot(grads)))
     self.gamma = np.sqrt(1 + self.C1*((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**4) * (self.t**(7/6)) * (self.hparams.lamb ** (-7/6))  )
     self.gamma *= self.hparams.mu * np.sqrt(-np.log(np.linalg.det(self.hparams.lamb * self.Zinv)) + self.C2 * ((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**4) * (self.t**(5/3)) * (self.hparams.lamb ** (-1/6)) - 2*np.log(self.hparams.delta)  ) + np.sqrt(self.hparams.lamb)*self.hparams.S
