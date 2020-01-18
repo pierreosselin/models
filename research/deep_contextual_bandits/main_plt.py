@@ -51,7 +51,7 @@ from bandits.data.synthetic_data_sampler import sample_linear_data
 from bandits.data.synthetic_data_sampler import sample_sparse_linear_data
 from bandits.data.synthetic_data_sampler import sample_wheel_bandit_data
 from bandits.algorithms.uniform_sampling import UniformSampling
-#from bandits.algorithms.neural_linear_sampling_finite_memory import NeuralLinearPosteriorSamplingFiniteMemory
+from bandits.algorithms.neural_linear_sampling_finite_memory import NeuralLinearPosteriorSamplingFiniteMemory
 from bandits.algorithms.neuralUCB import NeuralUCBSampling
 
 
