@@ -66,7 +66,6 @@ flags.DEFINE_string(
     'mushroom_data',
     os.path.join(base_route, data_route, 'mushroom.data'),
     'Directory where Mushroom data is stored.')
-'''
 flags.DEFINE_string(
     'financial_data',
     os.path.join(base_route, data_route, 'raw_stock_contexts'),
@@ -91,7 +90,6 @@ flags.DEFINE_string(
     'census_data',
     os.path.join(base_route, data_route, 'USCensus1990.data.txt'),
     'Directory where Census data is stored.')
-'''
 
 def sample_data(data_type, num_contexts=None):
   """Sample data from given 'data_type'.
