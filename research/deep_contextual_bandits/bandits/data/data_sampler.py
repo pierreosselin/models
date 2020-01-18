@@ -33,6 +33,30 @@ def one_hot(df, cols):
   return df
 
 
+def sample_moon_data(file_name,
+                     num_contexts):
+  """Samples bandit game from Moon UCI Dataset.
+
+  Args:
+    file_name: Route of file containing the original Moon UCI dataset.
+    num_contexts: Number of points to sample, i.e. (context, action rewards).
+
+  Returns:
+    dataset: Sampled matrix with n rows: (context, eat_reward, no_eat_reward).
+    opt_vals: Vector of expected optimal (reward, action) for each context.
+  """
+
+  # first two cols of df encode whether mushroom is edible or poisonous
+  df = pd.read_csv(file_name, header=None)
+  ind = np.random.choice(range(df.shape[0]), num_contexts, replace=True)
+  contexts = df.iloc[ind, :2].values
+  no_eat_reward = 1 - df.iloc[ind, 2].values[:,None]
+  eat_reward = df.iloc[ind, 2].values[:,None]
+  opt_vals = (np.ones(num_contexts), df.iloc[ind, 2].values)
+
+  return np.hstack((contexts, no_eat_reward, eat_reward)), opt_vals
+
+
 def sample_mushroom_data(file_name,
                          num_contexts,
                          r_noeat=0,
