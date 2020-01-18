@@ -66,32 +66,10 @@ flags.DEFINE_string(
     'mushroom_data',
     os.path.join(base_route, data_route, 'mushroom.data'),
     'Directory where Mushroom data is stored.')
-'''
-flags.DEFINE_string(
-    'financial_data',
-    os.path.join(base_route, data_route, 'raw_stock_contexts'),
-    'Directory where Financial data is stored.')
-flags.DEFINE_string(
-    'jester_data',
-    os.path.join(base_route, data_route, 'jester_data_40jokes_19181users.npy'),
-    'Directory where Jester data is stored.')
 flags.DEFINE_string(
     'statlog_data',
     os.path.join(base_route, data_route, 'shuttle.trn'),
     'Directory where Statlog data is stored.')
-flags.DEFINE_string(
-    'adult_data',
-    os.path.join(base_route, data_route, 'adult.full'),
-    'Directory where Adult data is stored.')
-flags.DEFINE_string(
-    'covertype_data',
-    os.path.join(base_route, data_route, 'covtype.data'),
-    'Directory where Covertype data is stored.')
-flags.DEFINE_string(
-    'census_data',
-    os.path.join(base_route, data_route, 'USCensus1990.data.txt'),
-    'Directory where Census data is stored.')
-'''
 
 def sample_data(data_type, num_contexts=None):
   """Sample data from given 'data_type'.
@@ -256,7 +234,7 @@ def main(_):
 
   # Data type in {linear, sparse_linear, mushroom, financial, jester,
   #                 statlog, adult, covertype, census, wheel}
-  data_type = 'mushroom'
+  data_type = 'statlog'
   
   # Create dataset
   sampled_vals = sample_data(data_type, num_contexts)
