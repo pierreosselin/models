@@ -217,6 +217,7 @@ def save_plot(algos, regrets, data_type, num_contexts, plt_dir):
   plt.title('Cumulative regrets for {} dataset over {} simulations'.format(data_type, data.shape[0]))
   plt.legend()
   plt.savefig('{}plot_{}'.format(plt_dir, data_type))
+  
 
 def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
   """Displays summary statistics of the performance of each algorithm."""
@@ -247,10 +248,11 @@ def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
 def main(_):
 
   # Problem parameters
-  num_contexts = 4000
+  num_contexts = 400
   nb_simulations = 5
   l_sizes=[50, 50]
   plt_dir = "plots/"
+  dict_dir = "dicts/"
 
   # Data type in {linear, sparse_linear, mushroom, financial, jester,
   #                 statlog, adult, covertype, census, wheel}
@@ -458,6 +460,29 @@ def main(_):
                                             S = 1)
   
   algos = [
+    #UniformSampling('Uniform Sampling', hparams),
+    #FixedPolicySampling('fixed1', [0.75, 0.25], hparams),
+    PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
+    PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
+    NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
+    #NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
+    LinearFullPosteriorSampling('LinFullPost', hparams_linear),
+    #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
+    #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
+    #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noSigP', hparams_nlinear_finite_memory_no_sig_prior),
+    #NeuralUCBSampling('NeuralUCB', hparams_ucb)
+  ]
+  
+  regrets = {}
+  rewards = {}
+  for a in algos: 
+    regrets[a.name] = np.zeros((nb_simulations, num_contexts))
+    rewards[a.name] = np.zeros(nb_simulations)
+  rewards['opt_reward'] = np.zeros(nb_simulations)
+    
+  for k in range(nb_simulations):
+    
+    algos = [
       #UniformSampling('Uniform Sampling', hparams),
       #FixedPolicySampling('fixed1', [0.75, 0.25], hparams),
       PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
@@ -469,30 +494,23 @@ def main(_):
       #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
       #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noSigP', hparams_nlinear_finite_memory_no_sig_prior),
       #NeuralUCBSampling('NeuralUCB', hparams_ucb)
-  ]
-  
-  regrets = {}
-  for a in algos: 
-    regrets[a.name] = np.zeros((nb_simulations, num_contexts))
-    
-  for k in range(nb_simulations):
+    ]  
     
     # Run contextual bandit problem
     t_init = time.time()
     results = run_contextual_bandit(context_dim, num_actions, dataset, algos)
     _, h_rewards = results
     
-    # Display results and save plot
+    # Display results
     display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, data_type)
     
     for j, a in enumerate(algos):
       regrets[a.name][k,:] = np.cumsum(opt_rewards - h_rewards[:, j])
-    
-    # Re-Create dataset
-    sampled_vals = sample_data(data_type, num_contexts)
-    dataset, opt_rewards, opt_actions, num_actions, context_dim = sampled_vals
+      rewards[a.name][k] = np.sum(h_rewards[:, j])
+    rewards['opt_reward'][k] = np.sum(opt_rewards)
     
   save_plot(algos, regrets, data_type, num_contexts, plt_dir)
+  np.save(dict_dir + 'dict_' + data_type + '.npy', rewards)
 
 if __name__ == '__main__':
   app.run(main)
