@@ -34,32 +34,9 @@ class NeuralGreedy(BanditAlgorithm):
 
     self.name = name
     self.eps = 0.9
-    self.decay = 0.9998 # computed for 10,000 steps
+    self.decay = 0.9999 # computed for 10,000 steps
     self.hparams = hparams
-    self.latent_dim = self.hparams.layer_sizes[-1]
 
-    # Gaussian prior for each beta_i
-    self._lambda_prior = self.hparams.lambda_prior
-
-    self.mu = [
-        np.zeros(self.latent_dim)
-        for _ in range(self.hparams.num_actions)
-    ]
-
-    self.cov = [(1.0 / self.lambda_prior) * np.eye(self.latent_dim)
-                for _ in range(self.hparams.num_actions)]
-
-    self.precision = [
-        self.lambda_prior * np.eye(self.latent_dim)
-        for _ in range(self.hparams.num_actions)
-    ]
-
-    # Inverse Gamma prior for each sigma2_i
-    self._a0 = self.hparams.a0
-    self._b0 = self.hparams.b0
-
-    self.a = [self._a0 for _ in range(self.hparams.num_actions)]
-    self.b = [self._b0 for _ in range(self.hparams.num_actions)]
 
     # Regression and NN Update Frequency
     self.update_freq_lr = hparams.training_freq
@@ -72,9 +49,6 @@ class NeuralGreedy(BanditAlgorithm):
     self.data_h = ContextualDataset(hparams.context_dim,
                                     hparams.num_actions,
                                     intercept=False)
-    self.latent_h = ContextualDataset(self.latent_dim,
-                                      hparams.num_actions,
-                                      intercept=False)
     self.bnn = NeuralBanditModel(optimizer, hparams, '{}-greedy'.format(name))
 
   def action(self, context):
