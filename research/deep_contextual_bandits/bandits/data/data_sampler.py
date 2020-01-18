@@ -219,9 +219,8 @@ def sample_adult_data(file_name, num_contexts, shuffle_rows=True,
 
   https://archive.ics.uci.edu/ml/datasets/census+income
   """
-  with tf.gfile.Open(file_name, 'r') as f:
-    df = pd.read_csv(f, header=None,
-                     na_values=[' ?']).dropna()
+  #with tf.gfile.Open(file_name, 'r') as f:
+  df = pd.read_csv(file_name, header=None, na_values=[' ?']).dropna()
 
   num_actions = 14
 

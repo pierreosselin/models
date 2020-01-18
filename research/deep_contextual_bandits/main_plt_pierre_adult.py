@@ -80,7 +80,7 @@ flags.DEFINE_string(
     'Directory where Statlog data is stored.')
 flags.DEFINE_string(
     'adult_data',
-    os.path.join(base_route, data_route, 'adult.full'),
+    os.path.join(base_route, data_route, 'adult.data'),
     'Directory where Adult data is stored.')
 flags.DEFINE_string(
     'covertype_data',
