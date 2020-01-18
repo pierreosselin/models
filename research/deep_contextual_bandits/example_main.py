@@ -232,18 +232,18 @@ def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
 def main(_):
 
   # Problem parameters
-  num_contexts = 2000
+  num_contexts = 10000
 
   # parameters of finite
   tfn=400
   tfe=tfn*2
   data_type = 'statlog'
-  l_sizes=[50]
+  l_sizes=[50, 50]
   outdir  ="./"
 
   # Data type in {linear, sparse_linear, mushroom, financial, jester,
   #                 statlog, adult, covertype, census, wheel}
-  data_type = 'mushroom'
+  data_type = 'jester'
 
   # Create dataset
   sampled_vals = sample_data(data_type, num_contexts)
@@ -284,7 +284,7 @@ def main(_):
                                                 context_dim=context_dim,
                                                 init_scale=0.3,
                                                 activation=tf.nn.relu,
-                                                layer_sizes=[50],
+                                                layer_sizes=[50, 50],
                                                 batch_size=512,
                                                 activate_decay=True,
                                                 initial_lr=0.1,
@@ -305,7 +305,7 @@ def main(_):
                                             context_dim=context_dim,
                                             init_scale=0.3,
                                             activation=tf.nn.relu,
-                                            layer_sizes=[50],
+                                            layer_sizes=[50, 50],
                                             batch_size=512,
                                             activate_decay=True,
                                             initial_lr=0.1,
@@ -327,7 +327,7 @@ def main(_):
                                                 context_dim=context_dim,
                                                 init_scale=0.3,
                                                 activation=tf.nn.relu,
-                                                layer_sizes=[50],
+                                                layer_sizes=[50, 50],
                                                 batch_size=512,
                                                 activate_decay=True,
                                                 initial_lr=0.1,
@@ -542,19 +542,19 @@ def main(_):
       #FixedPolicySampling('fixed1', [0.75, 0.25], hparams),
       #FixedPolicySampling('fixed2', [0.25, 0.75], hparams),
       #PosteriorBNNSampling('RMS', hparams_rms, 'RMSProp'),
-      #PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
-      #PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
-      #NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
+      PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
+      PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
+      NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
       #NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
-      #LinearFullPosteriorSampling('LinFullPost', hparams_linear),
+      LinearFullPosteriorSampling('LinFullPost', hparams_linear),
       #BootstrappedBNNSampling('BootRMS', hparams_rms),
-      #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
-      #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
+      NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
+      NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
       #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noSigP', hparams_nlinear_finite_memory_no_sig_prior)
       #ParameterNoiseSampling('ParamNoise', hparams_pnoise),
       #PosteriorBNNSampling('BBAlphaDiv', hparams_alpha_div, 'AlphaDiv'),
       #PosteriorBNNSampling('MultitaskGP', hparams_gp, 'GP'),hparams_ucb
-      NeuralUCBSampling('NeuralUCB', hparams_ucb)
+      #NeuralUCBSampling('NeuralUCB', hparams_ucb)
   ]
 
   # Run contextual bandit problem
