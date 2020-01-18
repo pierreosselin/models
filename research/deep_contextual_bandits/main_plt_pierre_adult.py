@@ -31,6 +31,7 @@ from absl import flags
 import numpy as np
 import os
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 from bandits.algorithms.bootstrapped_bnn_sampling import BootstrappedBNNSampling
 from bandits.core.contextual_bandit import run_contextual_bandit
@@ -50,7 +51,7 @@ from bandits.data.synthetic_data_sampler import sample_linear_data
 from bandits.data.synthetic_data_sampler import sample_sparse_linear_data
 from bandits.data.synthetic_data_sampler import sample_wheel_bandit_data
 from bandits.algorithms.uniform_sampling import UniformSampling
-#from bandits.algorithms.neural_linear_sampling_finite_memory import NeuralLinearPosteriorSamplingFiniteMemory
+from bandits.algorithms.neural_linear_sampling_finite_memory import NeuralLinearPosteriorSamplingFiniteMemory
 from bandits.algorithms.neuralUCB import NeuralUCBSampling
 
 
@@ -79,7 +80,7 @@ flags.DEFINE_string(
     'Directory where Statlog data is stored.')
 flags.DEFINE_string(
     'adult_data',
-    os.path.join(base_route, data_route, 'adult.data'),
+    os.path.join(base_route, data_route, 'adult.full'),
     'Directory where Adult data is stored.')
 flags.DEFINE_string(
     'covertype_data',
@@ -200,6 +201,21 @@ def sample_data(data_type, num_contexts=None):
 
   return dataset, opt_rewards, opt_actions, num_actions, context_dim
 
+def save_plot(algos, regrets, data_type, num_contexts, plt_dir):
+  plt.figure(figsize=(10,8))
+  for a in algos:
+    data = regrets[a.name]
+    t = np.arange(data.shape[1])
+    mean_regret = np.mean(data, axis=0)
+    std_regret = np.std(data, axis=0) / np.sqrt(data.shape[0])
+    plt.plot(t, mean_regret, label=a.name)
+    plt.fill_between(t, mean_regret - 2 * std_regret, mean_regret + 2 * std_regret, alpha=0.15)
+  plt.xlabel('iterations')
+  plt.ylabel('regret')
+  plt.title('Cumulative regrets for {} dataset over {} simulations'.format(data_type, data.shape[0]))
+  plt.legend()
+  plt.savefig('{}plot_{}'.format(plt_dir, data_type))
+
 
 def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
   """Displays summary statistics of the performance of each algorithm."""
@@ -231,17 +247,14 @@ def main(_):
 
   # Problem parameters
   num_contexts = 10000
-
-  # parameters of finite
-  tfn=400
-  tfe=tfn*2
-  data_type = 'statlog'
+  nb_simulations = 5
   l_sizes=[50, 50]
-  outdir  ="./"
+  plt_dir = "plots/"
+  dict_dir = "dicts/"
 
   # Data type in {linear, sparse_linear, mushroom, financial, jester,
   #                 statlog, adult, covertype, census, wheel}
-  data_type = 'jester'
+  data_type = 'adult'
 
   # Create dataset
   sampled_vals = sample_data(data_type, num_contexts)
@@ -257,32 +270,11 @@ def main(_):
                                                lambda_prior=0.25,
                                                initial_pulls=2)
 
-  hparams_rms = tf.contrib.training.HParams(num_actions=num_actions,
-                                            context_dim=context_dim,
-                                            init_scale=0.3,
-                                            activation=tf.nn.relu,
-                                            layer_sizes=[50],
-                                            batch_size=512,
-                                            activate_decay=True,
-                                            initial_lr=0.1,
-                                            max_grad_norm=5.0,
-                                            show_training=False,
-                                            freq_summary=1000,
-                                            buffer_s=-1,
-                                            initial_pulls=2,
-                                            optimizer='RMS',
-                                            reset_lr=True,
-                                            lr_decay_rate=0.5,
-                                            training_freq=50,
-                                            training_epochs=100,
-                                            p=0.95,
-                                            q=3)
-
   hparams_dropout = tf.contrib.training.HParams(num_actions=num_actions,
                                                 context_dim=context_dim,
                                                 init_scale=0.3,
                                                 activation=tf.nn.relu,
-                                                layer_sizes=[50, 50],
+                                                layer_sizes=l_sizes,
                                                 batch_size=512,
                                                 activate_decay=True,
                                                 initial_lr=0.1,
@@ -303,7 +295,7 @@ def main(_):
                                             context_dim=context_dim,
                                             init_scale=0.3,
                                             activation=tf.nn.relu,
-                                            layer_sizes=[50, 50],
+                                            layer_sizes=l_sizes,
                                             batch_size=512,
                                             activate_decay=True,
                                             initial_lr=0.1,
@@ -325,7 +317,7 @@ def main(_):
                                                 context_dim=context_dim,
                                                 init_scale=0.3,
                                                 activation=tf.nn.relu,
-                                                layer_sizes=[50, 50],
+                                                layer_sizes=l_sizes,
                                                 batch_size=512,
                                                 activate_decay=True,
                                                 initial_lr=0.1,
@@ -347,7 +339,7 @@ def main(_):
                                                  context_dim=context_dim,
                                                  init_scale=0.3,
                                                  activation=tf.nn.relu,
-                                                 layer_sizes=[50],
+                                                 layer_sizes=l_sizes,
                                                  batch_size=512,
                                                  activate_decay=True,
                                                  initial_lr=0.1,
@@ -440,80 +432,11 @@ def main(_):
                                                 mu_prior_flag=1,
                                                 sigma_prior_flag=0)
 
-  hparams_pnoise = tf.contrib.training.HParams(num_actions=num_actions,
-                                               context_dim=context_dim,
-                                               init_scale=0.3,
-                                               activation=tf.nn.relu,
-                                               layer_sizes=[50],
-                                               batch_size=512,
-                                               activate_decay=True,
-                                               initial_lr=0.1,
-                                               max_grad_norm=5.0,
-                                               show_training=False,
-                                               freq_summary=1000,
-                                               buffer_s=-1,
-                                               initial_pulls=2,
-                                               optimizer='RMS',
-                                               reset_lr=True,
-                                               lr_decay_rate=0.5,
-                                               training_freq=50,
-                                               training_epochs=100,
-                                               noise_std=0.05,
-                                               eps=0.1,
-                                               d_samples=300,
-                                              )
-
-  hparams_alpha_div = tf.contrib.training.HParams(num_actions=num_actions,
-                                                  context_dim=context_dim,
-                                                  init_scale=0.3,
-                                                  activation=tf.nn.relu,
-                                                  layer_sizes=[50],
-                                                  batch_size=512,
-                                                  activate_decay=True,
-                                                  initial_lr=0.1,
-                                                  max_grad_norm=5.0,
-                                                  show_training=False,
-                                                  freq_summary=1000,
-                                                  buffer_s=-1,
-                                                  initial_pulls=2,
-                                                  optimizer='RMS',
-                                                  use_sigma_exp_transform=True,
-                                                  cleared_times_trained=10,
-                                                  initial_training_steps=100,
-                                                  noise_sigma=0.1,
-                                                  reset_lr=False,
-                                                  training_freq=50,
-                                                  training_epochs=100,
-                                                  alpha=1.0,
-                                                  k=20,
-                                                  prior_variance=0.1)
-
-  hparams_gp = tf.contrib.training.HParams(num_actions=num_actions,
-                                           num_outputs=num_actions,
-                                           context_dim=context_dim,
-                                           reset_lr=False,
-                                           learn_embeddings=True,
-                                           max_num_points=1000,
-                                           show_training=False,
-                                           freq_summary=1000,
-                                           batch_size=512,
-                                           keep_fixed_after_max_obs=True,
-                                           training_freq=50,
-                                           initial_pulls=2,
-                                           training_epochs=100,
-                                           lr=0.01,
-                                           buffer_s=-1,
-                                           initial_lr=0.001,
-                                           lr_decay_rate=0.0,
-                                           optimizer='RMS',
-                                           task_latent_dim=5,
-                                           activate_decay=False)
-
   hparams_ucb = tf.contrib.training.HParams(num_actions=num_actions,
                                             context_dim=context_dim,
                                             init_scale=0.3,
                                             activation=tf.nn.relu,
-                                            layer_sizes=[50],
+                                            layer_sizes=l_sizes,
                                             batch_size=512,
                                             activate_decay=True,
                                             initial_lr=0.1,
@@ -525,7 +448,7 @@ def main(_):
                                             reset_lr=True,
                                             lr_decay_rate=0.5,
                                             optimizer='RMS',
-                                            training_freq=50,
+                                            training_freq=1,
                                             training_freq_network=50,
                                             training_epochs=100,
                                             lambda_prior=0.25,
@@ -535,33 +458,57 @@ def main(_):
                                             S = 1)
 
   algos = [
-      #UniformSampling('Uniform Sampling', hparams),
-      #UniformSampling('Uniform Sampling 2', hparams),
-      #FixedPolicySampling('fixed1', [0.75, 0.25], hparams),
-      #FixedPolicySampling('fixed2', [0.25, 0.75], hparams),
-      #PosteriorBNNSampling('RMS', hparams_rms, 'RMSProp'),
-      #PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
-      #PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
-      #NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
-      #NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
-      #LinearFullPosteriorSampling('LinFullPost', hparams_linear),
-      #BootstrappedBNNSampling('BootRMS', hparams_rms),
-      #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
-      #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
-      #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noSigP', hparams_nlinear_finite_memory_no_sig_prior)
-      #ParameterNoiseSampling('ParamNoise', hparams_pnoise),
-      #PosteriorBNNSampling('BBAlphaDiv', hparams_alpha_div, 'AlphaDiv'),
-      #PosteriorBNNSampling('MultitaskGP', hparams_gp, 'GP'),hparams_ucb
-      NeuralUCBSampling('NeuralUCB', hparams_ucb)
+    #UniformSampling('Uniform Sampling', hparams),
+    #FixedPolicySampling('fixed1', [0.75, 0.25], hparams),
+    PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
+    PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
+    NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
+    #NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
+    LinearFullPosteriorSampling('LinFullPost', hparams_linear),
+    NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
+    NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
+    #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noSigP', hparams_nlinear_finite_memory_no_sig_prior),
+    #NeuralUCBSampling('NeuralUCB', hparams_ucb)
   ]
 
-  # Run contextual bandit problem
-  t_init = time.time()
-  results = run_contextual_bandit(context_dim, num_actions, dataset, algos)
-  _, h_rewards = results
+  regrets = {}
+  rewards = {}
+  for a in algos:
+    regrets[a.name] = np.zeros((nb_simulations, num_contexts))
+    rewards[a.name] = np.zeros(nb_simulations)
+  rewards['opt_reward'] = np.zeros(nb_simulations)
 
-  # Display results
-  display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, data_type)
+  for k in range(nb_simulations):
+
+    algos = [
+      #UniformSampling('Uniform Sampling', hparams),
+      #FixedPolicySampling('fixed1', [0.75, 0.25], hparams),
+      PosteriorBNNSampling('Dropout', hparams_dropout, 'RMSProp'),
+      PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
+      NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
+      #NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
+      LinearFullPosteriorSampling('LinFullPost', hparams_linear),
+      NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
+      NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
+      #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noSigP', hparams_nlinear_finite_memory_no_sig_prior),
+      #NeuralUCBSampling('NeuralUCB', hparams_ucb)
+    ]
+
+    # Run contextual bandit problem
+    t_init = time.time()
+    results = run_contextual_bandit(context_dim, num_actions, dataset, algos)
+    _, h_rewards = results
+
+    # Display results
+    display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, data_type)
+
+    for j, a in enumerate(algos):
+      regrets[a.name][k,:] = np.cumsum(opt_rewards - h_rewards[:, j])
+      rewards[a.name][k] = np.sum(h_rewards[:, j])
+    rewards['opt_reward'][k] = np.sum(opt_rewards)
+
+  save_plot(algos, regrets, data_type, num_contexts, plt_dir)
+  np.save(dict_dir + 'dict_' + data_type + '.npy', rewards)
 
 if __name__ == '__main__':
   app.run(main)
