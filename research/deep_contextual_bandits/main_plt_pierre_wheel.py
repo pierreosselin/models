@@ -247,7 +247,7 @@ def main(_):
 
   # Problem parameters
   num_contexts = 10000
-  nb_simulations = 5
+  nb_simulations = 2
   l_sizes=[50, 50]
   plt_dir = "plots/"
   dict_dir = "dicts/"
