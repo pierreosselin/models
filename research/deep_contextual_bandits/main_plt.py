@@ -248,7 +248,7 @@ def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
 def main(_):
 
   # Problem parameters
-  num_contexts = 400
+  num_contexts = 10000
   nb_simulations = 5
   l_sizes=[50, 50]
   plt_dir = "plots/"
@@ -490,8 +490,8 @@ def main(_):
       NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
       #NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
       LinearFullPosteriorSampling('LinFullPost', hparams_linear),
-      #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
-      #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
+      NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
+      NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
       #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noSigP', hparams_nlinear_finite_memory_no_sig_prior),
       #NeuralUCBSampling('NeuralUCB', hparams_ucb)
     ]  
