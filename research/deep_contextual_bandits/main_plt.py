@@ -70,6 +70,10 @@ flags.DEFINE_string(
     'statlog_data',
     os.path.join(base_route, data_route, 'shuttle.trn'),
     'Directory where Statlog data is stored.')
+flags.DEFINE_string(
+    'covertype_data',
+    os.path.join(base_route, data_route, 'covtype.data'),
+    'Directory where Covertype data is stored.')
 
 def sample_data(data_type, num_contexts=None):
   """Sample data from given 'data_type'.
@@ -234,7 +238,7 @@ def main(_):
 
   # Data type in {linear, sparse_linear, mushroom, financial, jester,
   #                 statlog, adult, covertype, census, wheel}
-  data_type = 'statlog'
+  data_type = 'covertype'
   
   # Create dataset
   sampled_vals = sample_data(data_type, num_contexts)
@@ -455,8 +459,8 @@ def main(_):
   rewards = {}
   for a in algos: 
     regrets[a.name] = np.zeros((nb_simulations, num_contexts))
-    rewards[a.name] = np.zeros(nb_simulations)
-  rewards['opt_reward'] = np.zeros(nb_simulations)
+    rewards[a.name] = np.zeros((nb_simulations, num_contexts))
+  rewards['opt_reward'] = np.zeros((nb_simulations, num_contexts))
     
   for k in range(nb_simulations):
     
@@ -484,8 +488,8 @@ def main(_):
     
     for j, a in enumerate(algos):
       regrets[a.name][k,:] = np.cumsum(opt_rewards - h_rewards[:, j])
-      rewards[a.name][k] = np.sum(h_rewards[:, j])
-    rewards['opt_reward'][k] = np.sum(opt_rewards)
+      rewards[a.name][k,:] = h_rewards[:, j]
+    rewards['opt_reward'][k,:] = opt_rewards
     
   save_plot(algos, regrets, data_type, num_contexts, plt_dir)
   np.save(dict_dir + 'dict_' + data_type + '.npy', rewards)
