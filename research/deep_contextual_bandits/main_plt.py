@@ -467,8 +467,8 @@ def main(_):
     NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
     #NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
     LinearFullPosteriorSampling('LinFullPost', hparams_linear),
-    #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
-    #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
+    NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
+    NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
     #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noSigP', hparams_nlinear_finite_memory_no_sig_prior),
     #NeuralUCBSampling('NeuralUCB', hparams_ucb)
   ]
