@@ -254,7 +254,7 @@ def main(_):
 
   # Data type in {linear, sparse_linear, mushroom, financial, jester,
   #                 statlog, adult, covertype, census, wheel}
-  data_type = 'jester'
+  data_type = 'wheel'
 
   # Create dataset
   sampled_vals = sample_data(data_type, num_contexts)
