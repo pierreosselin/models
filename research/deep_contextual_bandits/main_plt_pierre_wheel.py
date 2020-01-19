@@ -246,7 +246,7 @@ def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
 def main(_):
 
   # Problem parameters
-  num_contexts = 10000
+  num_contexts = 20000
   nb_simulations = 5
   l_sizes=[50, 50]
   plt_dir = "plots/"
