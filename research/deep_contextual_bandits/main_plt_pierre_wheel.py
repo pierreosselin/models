@@ -187,7 +187,7 @@ def sample_data(data_type, num_contexts=None):
     dataset = np.hstack((contexts, rewards))
     context_dim = contexts.shape[1]
   elif data_type == 'wheel':
-    delta = 0.95
+    delta = 0.7
     num_actions = 5
     context_dim = 2
     mean_v = [1.0, 1.0, 1.0, 1.0, 1.2]
@@ -246,8 +246,8 @@ def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
 def main(_):
 
   # Problem parameters
-  num_contexts = 40000
-  nb_simulations = 1
+  num_contexts = 10000
+  nb_simulations = 5
   l_sizes=[50, 50]
   plt_dir = "plots/"
   dict_dir = "dicts/"
