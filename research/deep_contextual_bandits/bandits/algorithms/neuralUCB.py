@@ -35,7 +35,7 @@ from bandits.algorithms.variational_neural_bandit_model import VariationalNeural
 class NeuralUCBSampling(BanditAlgorithm):
   """UCB Sampling algorithm based on a neural network."""
 
-  def __init__(self, name, hparams, bnn_model='RMSProp'):
+  def __init__(self, name, hparams, bnn_model='RMSProp', optimizer = 'RMS'):
     """Creates a PosteriorBNNSampling object based on a specific optimizer.
 
     The algorithm has two basic tools: an Approx BNN and a Contextual Dataset.
@@ -57,9 +57,9 @@ class NeuralUCBSampling(BanditAlgorithm):
     self.gamma = 0
 
     self.bonus = np.zeros(hparams.num_actions)
-    self.C1 = 1
-    self.C2 = 1
-    self.C3 = 1
+    self.C1 = 0.001
+    self.C2 = 0.001
+    self.C3 = 0.00001
     self.data_h = ContextualDataset(hparams.context_dim, hparams.num_actions,
                                     hparams.buffer_s)
 
@@ -68,6 +68,7 @@ class NeuralUCBSampling(BanditAlgorithm):
     self.bnn = NeuralBanditModel(self.optimizer_n, hparams, bnn_name)
     self.p = (hparams.context_dim + 1) * (hparams.layer_sizes[0]) + (hparams.layer_sizes[0] + 1) * (hparams.layer_sizes[0]) * (len(hparams.layer_sizes) - 1) + (hparams.layer_sizes[0] + 1) * hparams.num_actions
     self.Zinv = (1/hparams.lamb) * np.eye(self.p)
+    self.detZ = hparams.lamb**self.p
 
   def action(self, context):
     """Selects action for context based on UCB using the NN."""
@@ -89,6 +90,9 @@ class NeuralUCBSampling(BanditAlgorithm):
               grads = np.concatenate((grads, el.flatten()))
           bonus.append(self.gamma * np.sqrt(grads.dot(self.Zinv.dot(grads)) / self.hparams.layer_sizes[0]))
       output += np.array(bonus)
+      print("Bonus of the actions",bonus)
+      print("Gamma", self.gamma)
+
       return np.argmax(output)
 
   def update(self, context, action, reward):
@@ -108,7 +112,11 @@ class NeuralUCBSampling(BanditAlgorithm):
         grads = np.concatenate((grads, el.flatten()))
 
     outer = np.outer(grads,grads) / self.hparams.layer_sizes[0]
-    self.Zinv -= self.Zinv.dot(outer.dot(self.Zinv))/(1 + grads.T.dot(self.Zinv.dot(grads)))
-    self.gamma = np.sqrt(1 + self.C1*((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**4) * (self.t**(7/6)) * (self.hparams.lamb ** (-7/6))  )
-    self.gamma *= self.hparams.mu * np.sqrt(-np.log(np.linalg.det(self.hparams.lamb * self.Zinv)) + self.C2 * ((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**4) * (self.t**(5/3)) * (self.hparams.lamb ** (-1/6)) - 2*np.log(self.hparams.delta)  ) + np.sqrt(self.hparams.lamb)*self.hparams.S
-    self.gamma += self.C3*((1 - self.hparams.mu * self.hparams.layer_sizes[0] * self.hparams.lamb )**(self.training_epochs) * np.sqrt(self.t/self.hparams.lamb) + ((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**(7/2)) * (self.t**(5/3)) * (self.hparams.lamb ** (-5/3)) * (1 + np.sqrt(self.t/self.hparams.lamb)))
+    self.detZ *= 1 + grads.dot(self.Zinv.dot(grads)) / self.hparams.layer_sizes[0]
+    self.Zinv -= self.Zinv.dot(outer.dot(self.Zinv))/(1 + (grads.T.dot(self.Zinv.dot(grads))/ self.hparams.layer_sizes[0]))
+
+    el1 = np.sqrt(1 + self.C1*((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**4) * (self.t**(7/6)) * (self.hparams.lamb ** (-7/6))  )
+    el2 = self.hparams.mu * np.sqrt(-np.log(self.detZ / (self.hparams.lamb**self.p)) + self.C2 * ((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**4) * (self.t**(5/3)) * (self.hparams.lamb ** (-1/6)) - 2*np.log(self.hparams.delta)  ) + np.sqrt(self.hparams.lamb)*self.hparams.S
+    el3 = self.C3*((1 - self.hparams.mu * self.hparams.layer_sizes[0] * self.hparams.lamb )**(self.training_epochs) * np.sqrt(self.t/self.hparams.lamb) + ((self.hparams.layer_sizes[0])**(-1/6))*np.sqrt(np.log(self.hparams.layer_sizes[0])) * (len(self.hparams.layer_sizes)**(7/2)) * (self.t**(5/3)) * (self.hparams.lamb ** (-5/3)) * (1 + np.sqrt(self.t/self.hparams.lamb)))
+    print("Profile Elements", el1, el2, el3)
+    self.gamma = el1 * el2 + el3

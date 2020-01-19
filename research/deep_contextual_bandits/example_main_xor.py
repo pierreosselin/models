@@ -258,7 +258,7 @@ def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
 def main(_):
 
   # Problem parameters
-  num_contexts = 20000
+  num_contexts = 10000
 
   # parameters of finite
   tfn=400
@@ -270,7 +270,7 @@ def main(_):
   # Data type in {linear, sparse_linear, mushroom, financial, jester,
   #                 statlog, adult, covertype, census, wheel}
   data_type = 'xor'
-  nExperiment = 2
+  nExperiment = 1
   # Create dataset
   sampled_vals = sample_data(data_type, num_contexts)
   dataset, opt_rewards, opt_actions, num_actions, context_dim = sampled_vals
@@ -565,7 +565,7 @@ def main(_):
                                             init_scale=0.3,
                                             activation=tf.nn.relu,
                                             layer_sizes=[50],
-                                            batch_size=512,
+                                            batch_size=64,
                                             activate_decay=True,
                                             initial_lr=0.1,
                                             max_grad_norm=5.0,
@@ -581,8 +581,8 @@ def main(_):
                                             training_epochs=100,
                                             lambda_prior=0.25,
                                             delta = 0.01,
-                                            lamb = 0.01,
-                                            mu = 1,
+                                            lamb = 1,
+                                            mu = 0.01,
                                             S = 1)
 
 
@@ -602,7 +602,7 @@ def main(_):
             #PosteriorBNNSampling('BBB', hparams_bbb, 'Variational'),
             #NeuralLinearPosteriorSampling('NeuralLinear', hparams_nlinear),
             #NeuralLinearPosteriorSampling('NeuralLinear2', hparams_nlinear2),
-            LinearFullPosteriorSampling('LinFullPost', hparams_linear),
+            #LinearFullPosteriorSampling('LinFullPost', hparams_linear),
             #BootstrappedBNNSampling('BootRMS', hparams_rms),
             #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory', hparams_nlinear_finite_memory),
             #NeuralLinearPosteriorSamplingFiniteMemory('NeuralLinearFiniteMemory_noP', hparams_nlinear_finite_memory_no_prior),
@@ -610,13 +610,14 @@ def main(_):
             #ParameterNoiseSampling('ParamNoise', hparams_pnoise),
             #PosteriorBNNSampling('BBAlphaDiv', hparams_alpha_div, 'AlphaDiv'),
             #PosteriorBNNSampling('MultitaskGP', hparams_gp, 'GP'),hparams_ucb
-            #NeuralUCBSampling('NeuralUCB', hparams_ucb)
-            NeuralGreedy('NeuralGreedy', hparams_greedy)]
+            NeuralUCBSampling('NeuralUCB', hparams_ucb)
+            #NeuralGreedy('NeuralGreedy', hparams_greedy)
+            ]
 
       results = run_contextual_bandit(context_dim, num_actions, dataset, algos)
       _, h_rewards = results
-      np.savetxt("resultLinXOR" + str(i) + ".csv",h_rewards[:,0], delimiter=',')
-      np.savetxt("resultGreedyXOR" + str(i) + ".csv",h_rewards[:,1], delimiter=',')
+      np.savetxt("resultLUCBXor" + str(i) + ".csv",h_rewards[:,0], delimiter=',')
+      #np.savetxt("resultGreedyXOR" + str(i) + ".csv",h_rewards[:,1], delimiter=',')
       # Display results
       display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, data_type)
 
