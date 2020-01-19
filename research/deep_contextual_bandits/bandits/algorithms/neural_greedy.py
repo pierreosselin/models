@@ -34,7 +34,7 @@ class NeuralGreedy(BanditAlgorithm):
 
     self.name = name
     self.eps = 0.9
-    self.decay = 0.9999 # computed for 10,000 steps
+    self.decay = 0.99 # computed for 10,000 steps
     self.hparams = hparams
 
 

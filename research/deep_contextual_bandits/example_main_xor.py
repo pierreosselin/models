@@ -42,6 +42,7 @@ from bandits.data.data_sampler import sample_jester_data
 from bandits.data.data_sampler import sample_mushroom_data
 from bandits.data.data_sampler import sample_statlog_data
 from bandits.data.data_sampler import sample_stock_data
+from bandits.data.data_sampler import sample_xor_data
 from bandits.data.data_sampler import sample_moon_data
 from bandits.algorithms.fixed_policy_sampling import FixedPolicySampling
 from bandits.algorithms.linear_full_posterior_sampling import LinearFullPosteriorSampling
@@ -140,6 +141,7 @@ def sample_data(data_type, num_contexts=None):
     file_name = FLAGS.moon_data
     dataset, opt_moon = sample_moon_data(file_name, num_contexts)
     opt_rewards, opt_actions = opt_moon
+
   elif data_type == 'xor':
     # Create mushroom dataset
     num_actions = 2
@@ -147,6 +149,7 @@ def sample_data(data_type, num_contexts=None):
     file_name = FLAGS.xor_data
     dataset, opt_xor = sample_xor_data(file_name, num_contexts)
     opt_rewards, opt_actions = opt_xor
+
   elif data_type == 'mushroom':
     # Create mushroom dataset
     num_actions = 2
@@ -255,7 +258,7 @@ def display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, name):
 def main(_):
 
   # Problem parameters
-  num_contexts = 40000
+  num_contexts = 20000
 
   # parameters of finite
   tfn=400
@@ -266,7 +269,7 @@ def main(_):
 
   # Data type in {linear, sparse_linear, mushroom, financial, jester,
   #                 statlog, adult, covertype, census, wheel}
-  data_type = 'moon'
+  data_type = 'xor'
   nExperiment = 2
   # Create dataset
   sampled_vals = sample_data(data_type, num_contexts)
@@ -612,8 +615,8 @@ def main(_):
 
       results = run_contextual_bandit(context_dim, num_actions, dataset, algos)
       _, h_rewards = results
-      np.savetxt("resultLin" + str(i) + ".csv",h_rewards[:,0], delimiter=',')
-      np.savetxt("resultMoon" + str(i) + ".csv",h_rewards[:,1], delimiter=',')
+      np.savetxt("resultLinXOR" + str(i) + ".csv",h_rewards[:,0], delimiter=',')
+      np.savetxt("resultGreedyXOR" + str(i) + ".csv",h_rewards[:,1], delimiter=',')
       # Display results
       display_results(algos, opt_rewards, opt_actions, h_rewards, t_init, data_type)
 
